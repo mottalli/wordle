@@ -19,7 +19,7 @@ use errors::*;
 trait Dictionary {
     fn get_random_word(&self, size: u8) -> Result<String>;
     fn contains_word(&self, word: &str) -> bool;
-    fn available_letters(&self) -> Vec<char>;
+    fn available_chars(&self) -> Vec<char>;
 }
 
 #[derive(PartialEq)]
@@ -223,7 +223,7 @@ impl Dictionary for EnglishDictionary {
         self.words.contains(&word.to_uppercase())
     }
 
-    fn available_letters(&self) -> Vec<char> {
+    fn available_chars(&self) -> Vec<char> {
         vec![
             'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q',
             'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
