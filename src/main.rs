@@ -35,7 +35,7 @@ struct CharResult {
 }
 
 struct GuessResult {
-    word: String,
+    _word: String,
     chars_result: Vec<CharResult>,
 }
 
@@ -138,7 +138,7 @@ impl WordleGameImpl {
             .collect();
 
         GuessResult {
-            word: guess_word.into(),
+            _word: guess_word.into(),
             chars_result: chars_result,
         }
     }

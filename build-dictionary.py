@@ -12,7 +12,6 @@ with gzip.open("./english-words.txt.gz") as f:
       dictFiles[n] = open(f"{n}.txt", "w")
 
     dictFiles[n].write(word.decode("utf-8") + "\n")
-    print(word, n)
   
 for f in dictFiles.values():
   f.close()
