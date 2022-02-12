@@ -2,6 +2,7 @@ use rand::Rng;
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::{self, BufRead, Write};
+use colored::*;
 
 #[macro_use]
 extern crate error_chain;
@@ -280,7 +281,14 @@ fn game_loop(game: &mut dyn WordleGame) -> Result<()> {
     loop {
         print!("Available letters: ");
         for (c, status) in game.chars_status() {
-            print!("{} {:?}", c, status);
+            let c = c.to_string();
+            let colored_char = match status {
+                None => c.white(),
+                Some(CharStatus::NotInWord) => c.red(),
+                Some(CharStatus::WrongPosition) => c.yellow(),
+                Some(CharStatus::RightPosition) => c.green()
+            };
+            print!("{} ", colored_char);
         }
         println!();
 

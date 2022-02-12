@@ -9,3 +9,4 @@ build = "build.rs"
 [dependencies]
 rand = "0.8.4"
 error-chain = "0.12.4"
+colored = "2"
