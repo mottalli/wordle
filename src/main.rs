@@ -264,9 +264,9 @@ fn colored_char_by_status(cs: &CharAndStatus) -> ColoredString {
     let CharAndStatus(c, status) = *cs;
     let c = c.to_string();
     match status {
-        CharStatus::NotInWord => c.red(),
-        CharStatus::WrongPosition => c.yellow(),
-        CharStatus::RightPosition => c.green(),
+        CharStatus::NotInWord => c.black().on_red(),
+        CharStatus::WrongPosition => c.black().on_yellow(),
+        CharStatus::RightPosition => c.black().on_green(),
         CharStatus::NotUsed => c.white()
     }
 }
