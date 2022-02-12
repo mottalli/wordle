@@ -213,7 +213,7 @@ impl EnglishDictionary {
     fn new(word_size: u8) -> Result<EnglishDictionary> {
         let mut words = HashSet::<String>::new();
 
-        let file = File::open(format!("{}.txt", word_size))?;
+        let file = File::open(format!("dictionaries/english/{}.txt", word_size))?;
         let lines = io::BufReader::new(file).lines();
         lines.into_iter().filter_map(|w| w.ok()).for_each(|w| {
             words.insert(w.to_uppercase());
@@ -324,8 +324,8 @@ fn do_main() -> Result<()> {
     let word_size = 5;
     let dict = EnglishDictionary::new(word_size)?;
     let word = dict.get_random_word(word_size)?;
-    let word = "silos";
-    println!("Word is: {}", word);
+    // let word = "silos";
+    // println!("Word is: {}", word);
     let mut game = WordleGameImpl::new(Box::new(dict), &word, 6)?;
     game_loop(&mut game)
 }
