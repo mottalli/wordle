@@ -22,7 +22,7 @@ trait Dictionary {
     fn available_chars(&self) -> Vec<char>;
 }
 
-#[derive(PartialEq)]
+#[derive(Debug, PartialEq, Copy, Clone)]
 enum CharStatus {
     NotInWord,
     WrongPosition,
@@ -69,6 +69,7 @@ enum RoundResult<'a> {
 trait WordleGame {
     fn guess_word<'a>(&'a mut self, word: &str) -> RoundResult<'a>;
     fn max_guesses(&self) -> usize;
+    fn chars_status(&self) -> Vec<(char, Option<CharStatus>)>;
 }
 
 struct WordleGameImpl {
@@ -76,6 +77,7 @@ struct WordleGameImpl {
     word: String,
     status: GameStatus,
     max_guesses: usize,
+    chars_status: HashMap<char, Option<CharStatus>>,
 }
 
 impl WordleGameImpl {
@@ -85,12 +87,18 @@ impl WordleGameImpl {
         max_guesses: usize,
     ) -> Result<WordleGameImpl> {
         let word = word.to_uppercase();
+        let chars_status: HashMap<char, Option<CharStatus>> = dictionary
+            .available_chars()
+            .iter()
+            .map(|&c| (c, None))
+            .collect();
 
         Ok(WordleGameImpl {
             dictionary: dictionary,
             word: word,
             status: GameStatus::new_game(),
             max_guesses: max_guesses,
+            chars_status: chars_status,
         })
     }
 
@@ -149,6 +157,14 @@ impl WordleGame for WordleGameImpl {
         self.max_guesses
     }
 
+    fn chars_status(&self) -> Vec<(char, Option<CharStatus>)> {
+        self.dictionary
+            .available_chars()
+            .iter()
+            .map(|c| (*c, *self.chars_status.get(c).unwrap()))
+            .collect()
+    }
+
     fn guess_word<'a>(&'a mut self, word: &str) -> RoundResult<'a> {
         let word = word.to_uppercase();
 
@@ -162,6 +178,21 @@ impl WordleGame for WordleGameImpl {
         }
 
         let result = WordleGameImpl::guess_result(&self.word, &word);
+
+        // Update internal cache
+        for cr in result.chars_result.iter() {
+            self.chars_status.entry(cr.char).and_modify(|old_cs| {
+                let new_status: CharStatus = match (old_cs.as_ref(), cr.status) {
+                    (None, s) => s,
+                    (Some(CharStatus::RightPosition), _) => CharStatus::RightPosition,
+                    (_, CharStatus::RightPosition) => CharStatus::RightPosition,
+                    (Some(CharStatus::WrongPosition), _) => CharStatus::WrongPosition,
+                    (_, s) => s,
+                };
+                *old_cs = Some(new_status);
+            });
+        }
+
         let won: bool = result.is_won();
         self.status.guesses.push(result);
 
@@ -247,6 +278,12 @@ fn print_guess_result(result: &GuessResult) {
 
 fn game_loop(game: &mut dyn WordleGame) -> Result<()> {
     loop {
+        print!("Available letters: ");
+        for (c, status) in game.chars_status() {
+            print!("{} {:?}", c, status);
+        }
+        println!();
+
         print!("Enter a word!: ");
         let _ = io::stdout().flush();
         let word: String = {
