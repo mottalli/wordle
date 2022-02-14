@@ -11,6 +11,7 @@ pub enum CharStatus {
     NotUsed
 }
 
+#[derive(Debug, PartialEq)]
 pub struct CharAndStatus(pub char, pub CharStatus);
 
 pub struct GuessResult {
@@ -180,6 +181,93 @@ impl WordleGame for WordleGameImpl {
             return RoundResult::Lost(&self.status, self.word.clone());
         } else {
             RoundResult::Continue(&self.status)
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use super::super::dictionary::EnglishDictionary;
+
+    fn set_up_game(word: &str) -> WordleGameImpl {
+        let dict = EnglishDictionary::new(word.len()).unwrap();
+        WordleGameImpl::new(Box::new(dict), word, 3).unwrap()
+    }
+
+    #[test]
+    fn fails_after_specified_tries() {
+        let word: String = "sound".into();
+        let mut game = set_up_game(&word);
+        let r1 = game.guess_word("wrong");
+        assert!(matches!(r1, RoundResult::Continue(_)));
+        let r2 = game.guess_word("wrong");
+        assert!(matches!(r2, RoundResult::Continue(_)));
+        let r3 = game.guess_word("wrong");
+        assert!(matches!(r3, RoundResult::Lost(_, _)));
+        if let RoundResult::Lost(_, result_word) = r3 {
+            assert_eq!(result_word.to_lowercase(), word.to_lowercase());
+        } else {
+            unreachable!();
+        }
+    }
+
+    #[test]
+    fn suceeds_correctly() {
+        let word: String = "sound".into();
+        let mut game = set_up_game(&word);
+        let r1 = game.guess_word("wrong");
+        assert!(matches!(r1, RoundResult::Continue(_)));
+        let r2 = game.guess_word(&word);
+        assert!(matches!(r2, RoundResult::Won(_, _)));
+    }
+
+    #[test]
+    fn fails_with_wrong_number_of_letters() {
+        let mut game = set_up_game("sound");
+        let r1 = game.guess_word("toomanyletters");
+        assert!(matches!(r1, RoundResult::Error(_)));
+    }
+
+    #[test]
+    fn reports_letters_1() {
+        let word: String = "sound".into();
+        let mut game = set_up_game(&word);
+        let guess = game.guess_word("wrong");
+        assert!(matches!(guess, RoundResult::Continue(_)));
+    
+        if let RoundResult::Continue(status) = guess {
+            assert_eq!(1, status.guesses.len());
+            let guess_result = status.guesses.first().unwrap();
+            let chars_result = &guess_result.chars_result;
+            assert_eq!(CharAndStatus('W', CharStatus::NotInWord), chars_result[0]);
+            assert_eq!(CharAndStatus('R', CharStatus::NotInWord), chars_result[1]);
+            assert_eq!(CharAndStatus('O', CharStatus::WrongPosition), chars_result[2]);
+            assert_eq!(CharAndStatus('N', CharStatus::RightPosition), chars_result[3]);
+            assert_eq!(CharAndStatus('G', CharStatus::NotInWord), chars_result[4]);
+        } else {
+            unreachable!();
+        }
+    }
+
+    #[test]
+    fn does_not_report_letters_several_times() {
+        let word: String = "sound".into();
+        let mut game = set_up_game(&word);
+        let guess = game.guess_word("groot");
+        assert!(matches!(guess, RoundResult::Continue(_)));
+    
+        if let RoundResult::Continue(status) = guess {
+            assert_eq!(1, status.guesses.len());
+            let guess_result = status.guesses.first().unwrap();
+            let chars_result = &guess_result.chars_result;
+            assert_eq!(CharAndStatus('G', CharStatus::NotInWord), chars_result[0]);
+            assert_eq!(CharAndStatus('R', CharStatus::NotInWord), chars_result[1]);
+            assert_eq!(CharAndStatus('O', CharStatus::WrongPosition), chars_result[2]);
+            assert_eq!(CharAndStatus('O', CharStatus::NotInWord), chars_result[3]);
+            assert_eq!(CharAndStatus('T', CharStatus::NotInWord), chars_result[4]);
+        } else {
+            unreachable!();
         }
     }
 }

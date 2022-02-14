@@ -6,18 +6,18 @@ use std::fs::File;
 use std::io::{self, BufRead};
 
 pub trait Dictionary {
-    fn get_random_word(&self, size: u8) -> Result<String>;
+    fn get_random_word(&self, size: usize) -> Result<String>;
     fn contains_word(&self, word: &str) -> bool;
     fn available_chars(&self) -> Vec<char>;
 }
 
 pub struct EnglishDictionary {
     words: HashSet<String>,
-    word_size: u8,
+    word_size: usize,
 }
 
 impl EnglishDictionary {
-    pub fn new(word_size: u8) -> Result<EnglishDictionary> {
+    pub fn new(word_size: usize) -> Result<EnglishDictionary> {
         let mut words = HashSet::<String>::new();
 
         let file = File::open(format!("dictionaries/english/{}.txt", word_size))?;
@@ -38,7 +38,7 @@ impl EnglishDictionary {
 }
 
 impl Dictionary for EnglishDictionary {
-    fn get_random_word(&self, size: u8) -> Result<String> {
+    fn get_random_word(&self, size: usize) -> Result<String> {
         if self.word_size != size {
             return Err(format!(
                 "Tried to get a word of {} characters using a dictionary of {} characters",
