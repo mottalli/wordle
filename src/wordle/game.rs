@@ -1,5 +1,5 @@
-use super::errors::Result;
 use super::dictionary::Dictionary;
+use super::errors::Result;
 
 use std::collections::{HashMap, HashSet};
 
@@ -8,7 +8,7 @@ pub enum CharStatus {
     NotInWord,
     WrongPosition,
     RightPosition,
-    NotUsed
+    NotUsed,
 }
 
 #[derive(Debug, PartialEq)]
@@ -90,37 +90,56 @@ impl WordleGameImpl {
             positions_map.entry(c).or_default().insert(pos);
         }
 
-        let chars_result: Vec<CharAndStatus> = guess_word
+        let mut processed_positions: HashSet<usize> = HashSet::new();
+
+        let mut chars_result: Vec<CharAndStatus> = guess_word
+            .chars()
+            .map(|c| CharAndStatus(c, CharStatus::NotInWord))
+            .collect();
+
+        // First, remove all positions that match
+        target_word
+            .chars()
+            .zip(guess_word.chars())
+            .enumerate()
+            .filter_map(
+                |(pos, (src, guess))| {
+                    if src == guess {
+                        Some((pos, src))
+                    } else {
+                        None
+                    }
+                },
+            )
+            .for_each(|(pos, c)| {
+                assert!(chars_result[pos].0 == c);
+                chars_result[pos].1 = CharStatus::RightPosition;
+                // Now remove the right position from the list of positions map
+                positions_map.get_mut(&c).unwrap().remove(&pos);
+                processed_positions.insert(pos);
+            });
+
+        guess_word
             .chars()
             .enumerate()
-            .map(|(position, src_char)| {
-                //for (c, poss) in positions_map.iter() {
-                //    println!("{}: {:?}", c, poss);
-                //}
-
+            .filter(|(pos, _)| !processed_positions.contains(&pos))
+            .for_each(|(pos, src_char)| {
                 let char_status: CharStatus = match positions_map.get_mut(&src_char) {
                     None => CharStatus::NotInWord,
+                    Some(ref positions) if positions.is_empty() => CharStatus::NotInWord,
                     Some(ref mut positions) => {
-                        if positions.contains(&position) {
-                            positions.remove(&position);
-                            CharStatus::RightPosition
-                        } else {
-                            // Remove the first position from the set, if any
-                            //if let Some(p) = positions.iter().next().map(|p| *p) {
-                            //    positions.remove(&p);
-                            //}
-                            if positions.is_empty() {
-                                CharStatus::NotInWord
-                            } else {
-                                CharStatus::WrongPosition
-                            }
-                        }
+                        // We already processed all the "correct" positions
+                        assert!(!positions.contains(&pos));
+                        // Remove some element from the list of positions. It doesn't really matter
+                        // which one.
+                        let first_element: usize = *positions.iter().next().unwrap();
+                        positions.remove(&first_element);
+                        CharStatus::WrongPosition
                     }
                 };
 
-                CharAndStatus(src_char, char_status)
-            })
-            .collect();
+                chars_result[pos].1 = char_status;
+            });
 
         GuessResult {
             _word: guess_word.into(),
@@ -187,8 +206,8 @@ impl WordleGame for WordleGameImpl {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::super::dictionary::EnglishDictionary;
+    use super::*;
 
     fn set_up_game(word: &str) -> WordleGameImpl {
         let dict = EnglishDictionary::new(word.len()).unwrap();
@@ -235,15 +254,21 @@ mod tests {
         let mut game = set_up_game(&word);
         let guess = game.guess_word("wrong");
         assert!(matches!(guess, RoundResult::Continue(_)));
-    
+
         if let RoundResult::Continue(status) = guess {
             assert_eq!(1, status.guesses.len());
             let guess_result = status.guesses.first().unwrap();
             let chars_result = &guess_result.chars_result;
             assert_eq!(CharAndStatus('W', CharStatus::NotInWord), chars_result[0]);
             assert_eq!(CharAndStatus('R', CharStatus::NotInWord), chars_result[1]);
-            assert_eq!(CharAndStatus('O', CharStatus::WrongPosition), chars_result[2]);
-            assert_eq!(CharAndStatus('N', CharStatus::RightPosition), chars_result[3]);
+            assert_eq!(
+                CharAndStatus('O', CharStatus::WrongPosition),
+                chars_result[2]
+            );
+            assert_eq!(
+                CharAndStatus('N', CharStatus::RightPosition),
+                chars_result[3]
+            );
             assert_eq!(CharAndStatus('G', CharStatus::NotInWord), chars_result[4]);
         } else {
             unreachable!();
@@ -251,20 +276,50 @@ mod tests {
     }
 
     #[test]
-    fn does_not_report_letters_several_times() {
+    fn does_not_report_letters_several_times_1() {
         let word: String = "sound".into();
         let mut game = set_up_game(&word);
         let guess = game.guess_word("groot");
         assert!(matches!(guess, RoundResult::Continue(_)));
-    
+
         if let RoundResult::Continue(status) = guess {
             assert_eq!(1, status.guesses.len());
             let guess_result = status.guesses.first().unwrap();
             let chars_result = &guess_result.chars_result;
             assert_eq!(CharAndStatus('G', CharStatus::NotInWord), chars_result[0]);
             assert_eq!(CharAndStatus('R', CharStatus::NotInWord), chars_result[1]);
-            assert_eq!(CharAndStatus('O', CharStatus::WrongPosition), chars_result[2]);
+            assert_eq!(
+                CharAndStatus('O', CharStatus::WrongPosition),
+                chars_result[2]
+            );
             assert_eq!(CharAndStatus('O', CharStatus::NotInWord), chars_result[3]);
+            assert_eq!(CharAndStatus('T', CharStatus::NotInWord), chars_result[4]);
+        } else {
+            unreachable!();
+        }
+    }
+
+    #[test]
+    fn does_not_report_letters_several_times_2() {
+        let word: String = "sound".into();
+        let mut game = set_up_game(&word);
+        let guess = game.guess_word("boost");
+        assert!(matches!(guess, RoundResult::Continue(_)));
+
+        if let RoundResult::Continue(status) = guess {
+            assert_eq!(1, status.guesses.len());
+            let guess_result = status.guesses.first().unwrap();
+            let chars_result = &guess_result.chars_result;
+            assert_eq!(CharAndStatus('B', CharStatus::NotInWord), chars_result[0]);
+            assert_eq!(
+                CharAndStatus('O', CharStatus::RightPosition),
+                chars_result[1]
+            );
+            assert_eq!(CharAndStatus('O', CharStatus::NotInWord), chars_result[2]);
+            assert_eq!(
+                CharAndStatus('S', CharStatus::WrongPosition),
+                chars_result[3]
+            );
             assert_eq!(CharAndStatus('T', CharStatus::NotInWord), chars_result[4]);
         } else {
             unreachable!();

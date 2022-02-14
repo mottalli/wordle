@@ -1,11 +1,11 @@
 #[macro_use]
 extern crate error_chain;
 
-use std::io::{self, Write};
 use colored::*;
+use std::io::{self, Write};
 
 mod wordle;
-use wordle::{RoundResult, CharStatus, CharAndStatus, GuessResult, WordleGame, Dictionary};
+use wordle::{CharAndStatus, CharStatus, Dictionary, GuessResult, RoundResult, WordleGame};
 
 fn colored_char_by_status(cs: &CharAndStatus) -> ColoredString {
     let CharAndStatus(c, status) = *cs;
@@ -14,12 +14,13 @@ fn colored_char_by_status(cs: &CharAndStatus) -> ColoredString {
         CharStatus::NotInWord => c.black().on_red(),
         CharStatus::WrongPosition => c.black().on_yellow(),
         CharStatus::RightPosition => c.black().on_green(),
-        CharStatus::NotUsed => c.white()
+        CharStatus::NotUsed => c.white(),
     }
 }
 
 fn print_chars_with_status(chars_status: &[CharAndStatus]) {
-    let colored_string = chars_status.iter()
+    let colored_string = chars_status
+        .iter()
         .map(colored_char_by_status)
         .map(|cs| cs.to_string())
         .collect::<Vec<String>>()

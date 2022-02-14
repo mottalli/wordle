@@ -1,7 +1,7 @@
+mod dictionary;
 mod errors;
 mod game;
-mod dictionary;
 
+pub use dictionary::*;
 pub use errors::*;
 pub use game::*;
-pub use dictionary::*;
