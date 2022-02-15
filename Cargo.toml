@@ -3,6 +3,8 @@ name = "wordle"
 version = "0.1.0"
 edition = "2021"
 build = "build.rs"
+authors = ["Marcelo Mottalli <mottalli@gmail.com>"]
+description = "A word-guessing game"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -10,3 +12,4 @@ build = "build.rs"
 rand = "0.8.4"
 error-chain = "0.12.4"
 colored = "2"
+clap = { version = "3.0.14", features = ["derive"] }

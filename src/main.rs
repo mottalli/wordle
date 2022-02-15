@@ -1,6 +1,7 @@
 #[macro_use]
 extern crate error_chain;
 
+use clap::Parser;
 use colored::*;
 use std::io::{self, Write};
 
@@ -68,13 +69,28 @@ fn game_loop(game: &mut dyn WordleGame) -> wordle::Result<()> {
     Ok(())
 }
 
+#[derive(Parser, Debug)]
+#[clap(author, version, about)]
+struct Cli {
+    /// Numbers of letters in the word to guess
+    #[clap(long, default_value_t=5)]
+    word_size: usize,
+    /// Number of tries
+    #[clap(long, default_value_t=6)]
+    num_guesses: usize,
+    /// Disable using the dictionary for matching words
+    #[clap(long)]
+    dont_use_dictionary: bool,
+}
+
 fn do_main() -> wordle::Result<()> {
-    let word_size = 5;
-    let dict = wordle::EnglishDictionary::new(word_size)?;
-    let word = dict.get_random_word(word_size)?;
+    let args = Cli::parse();
+
+    let dict = wordle::EnglishDictionary::new(args.word_size)?;
+    let word = dict.get_random_word(args.word_size)?;
     // let word = "silos";
     // println!("Word is: {}", word);
-    let mut game = wordle::WordleGameImpl::new(Box::new(dict), &word, 6)?;
+    let mut game = wordle::WordleGameImpl::new(Box::new(dict), &word, args.num_guesses)?;
     game_loop(&mut game)
 }
 
