@@ -74,11 +74,11 @@ impl WordleGameImpl {
             .collect();
 
         Ok(WordleGameImpl {
-            dictionary: dictionary,
-            word: word,
+            dictionary,
+            word,
             status: GameStatus::new_game(),
-            max_guesses: max_guesses,
-            chars_status: chars_status,
+            max_guesses,
+            chars_status,
         })
     }
 
@@ -143,7 +143,7 @@ impl WordleGameImpl {
 
         GuessResult {
             _word: guess_word.into(),
-            chars_result: chars_result,
+            chars_result,
         }
     }
 }
